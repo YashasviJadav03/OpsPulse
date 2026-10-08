@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      routes:
+        - id: core-auth
+          uri: ${CORE_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/auth/**
+        - id: core-monitors
+          uri: ${CORE_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/monitors/**
+        - id: core-incidents
+          uri: ${CORE_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/incidents/**
+        - id: core-users
+          uri: ${CORE_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/users/**
+        - id: ai-service
+          uri: ${AI_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/ai/**
+
+opspulse:
+  jwt:
+    secret: ${JWT_SECRET:opspulse-default-secret-key-that-is-at-least-256-bits-long-32bytes!}
+  ratelimit:
+    capacity: 100
+    refill-tokens-per-minute: 100
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: opspulse-postgres
+    environment:
+      POSTGRES_DB: opspulse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d opspulse" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  core-service:
+    build:
+      context: .
+      dockerfile: core-service/Dockerfile
+    container_name: opspulse-core-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/opspulse
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: opspulse-default-secret-key-that-is-at-least-256-bits-long-32bytes!
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: opspulse-gateway
+    environment:
+      CORE_SERVICE_URL: http://core-service:8081
+      AI_SERVICE_URL: http://ai-service:8083
+      JWT_SECRET: opspulse-default-secret-key-that-is-at-least-256-bits-long-32bytes!
+    ports:
+      - "8080:8080"
+    depends_on:
+      - core-service
+
+volumes:
+  postgres_data:
